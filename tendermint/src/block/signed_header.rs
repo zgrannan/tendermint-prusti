@@ -1,8 +1,19 @@
-//! SignedHeader contains commit and and block header.
-//! It is what the rpc endpoint /commit returns and hence can be used by a
-//! light client.
+use std::{fmt};
+use crate::{block};
 
-/// Signed block headers
+extern crate prusti_contracts;
+use prusti_contracts::*;
+
 #[non_exhaustive]
+#[derive(Clone, PartialEq)]
 pub struct SignedHeader {
+    pub header: block::Header,
+}
+
+impl fmt::Debug for SignedHeader {
+    #[trusted]
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("SignedHeader")
+            .finish()
+    }
 }

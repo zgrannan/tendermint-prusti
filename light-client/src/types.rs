@@ -1,6 +1,10 @@
 //! Defines or just re-exports the main datatypes used by the light client.
 
+use std::fmt;
 pub use tendermint::{block::Height, hash::Hash};
+
+extern crate prusti_contracts;
+use prusti_contracts::*;
 
 use tendermint::{
     block::{
@@ -9,9 +13,18 @@ use tendermint::{
     },
 };
 
+#[derive(Clone, PartialEq)]
 pub struct LightBlock {
     /// Header and commit of this block
     pub signed_header: SignedHeader,
+}
+
+impl fmt::Debug for LightBlock {
+    #[trusted]
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("LightBlock")
+            .finish()
+    }
 }
 
 impl LightBlock {
@@ -33,6 +46,7 @@ impl LightBlock {
     }
 }
 
+#[derive(Clone, PartialEq)]
 pub enum Status {
     /// The light block has failed verification.
     Failed,
@@ -42,6 +56,14 @@ pub enum Status {
     Verified,
     /// The light block has been successfully verified and has passed fork detection.
     Trusted,
+}
+
+impl fmt::Debug for Status {
+    #[trusted]
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Status")
+            .finish()
+    }
 }
 
 /// A signed header contains both a `Header` and its corresponding `Commit`.
