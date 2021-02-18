@@ -22,8 +22,7 @@ struct StoreEntry {
 impl fmt::Debug for StoreEntry {
     #[trusted]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("StoreEntry")
-            .finish()
+        f.debug_struct("StoreEntry").finish()
     }
 }
 
@@ -54,20 +53,49 @@ impl MemoryStore {
 impl fmt::Debug for MemoryStore {
     #[trusted]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("MemoryStore")
-            .finish()
+        f.debug_struct("MemoryStore").finish()
+    }
+}
+
+#[trusted]
+#[ensures(get_ms(ms, light_block.height(), status) == Some(light_block))]
+fn insert_ms(ms: &mut MemoryStore, light_block: LightBlock, status: Status) {
+    ms.store
+        .insert(light_block.height(), StoreEntry::new(light_block, status));
+}
+
+#[pure]
+#[trusted]
+fn get_ms(ms: &MemoryStore, height: Height, status: Status) -> Option<LightBlock> {
+    let value = ms.store.get(&height);
+    match value {
+        Some(e) => {
+            if (e.status == status) {
+                return Some(e.light_block.clone());
+            } else {
+                return None;
+            }
+        }
+        None => return None,
     }
 }
 
 impl LightStore for MemoryStore {
+    #[pure]
     #[trusted]
-    // fn get(&self, height: Height, status: Status) -> Option<LightBlock> {
-    //     self.store
-    //         .get(&height)
-    //         .filter(|e| e.status == status)
-    //         .cloned()
-    //         .map(|e| e.light_block)
-    // }
+    fn get(&self, height: Height, status: Status) -> Option<LightBlock> {
+        let value = self.store.get(&height);
+        match value {
+            Some(e) => {
+                if (e.status == status) {
+                    return Some(e.light_block.clone());
+                } else {
+                    return None;
+                }
+            }
+            None => return None,
+        }
+    }
 
     fn insert(&mut self, light_block: LightBlock, status: Status) {
         self.store
@@ -87,45 +115,55 @@ impl LightStore for MemoryStore {
         self.insert(light_block.clone(), status);
     }
 
-    #[trusted]
+    // Note: this relies on the fact that iter() returns a list
+    //       of elements sorted by key
     fn highest(&self, status: Status) -> Option<LightBlock> {
-        None
-        // self.store
-        //     .iter()
-        //     .filter(|(_, e)| e.status == status)
-        //     .max_by_key(|(&height, _)| height)
-        //     .map(|(_, e)| e.light_block.clone())
+        let mut it = self.store.values().rev();
+        loop {
+            match it.next() {
+                Some(e) => {
+                    if (e.status == status) {
+                        return Some(e.light_block.clone());
+                    } else {
+                        return None;
+                    }
+                }
+                None => return None,
+            }
+        }
     }
 
+    // Note: this relies on the fact that iter() returns a list
+    //       of elements sorted by key
     fn lowest(&self, status: Status) -> Option<LightBlock> {
-        // Note: keys are in sorted order
-        match self.store.keys().next() {
-            Some(key) => match self.store.get(key) {
-                Some(e) => Some(e.light_block.clone()),
-                None => None
+        let mut it = self.store.values();
+        loop {
+            match it.next() {
+                Some(e) => {
+                    if (e.status == status) {
+                        return Some(e.light_block.clone());
+                    } else {
+                        return None;
+                    }
+                }
+                None => return None,
             }
-          None => None
         }
-        // let it = self.store.iter();
-        // let lowest_height = Height(0);
-        // self.store
-        //     .iter()
-        //     .filter(|(_, e)| e.status == status)
-        //     .min_by_key(|(&height, _)| height)
-        //     .map(|(_, e)| e.light_block.clone())
     }
 
     #[trusted]
     fn all(&self, status: Status) -> Box<dyn Iterator<Item = LightBlock>> {
-        // let light_blocks: Vec<_> = self
-        //     .store
-        //     .iter()
-        //     .filter(|(_, e)| e.status == status)
-        //     .map(|(_, e)| e.light_block.clone())
-        //     .collect();
-
-        // Box::new(light_blocks.into_iter())
-        //
-        Box::new(std::iter::empty())
+        let mut vec = Vec::new();
+        let mut it = self.store.values();
+        loop {
+            match it.next() {
+                Some(e) => {
+                    if (e.status == status) {
+                        vec.push(e.light_block.clone())
+                    }
+                }
+                None => return Box::new(std::iter::empty()),
+            }
+        }
     }
 }

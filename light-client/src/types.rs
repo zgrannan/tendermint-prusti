@@ -6,12 +6,7 @@ pub use tendermint::{block::Height, hash::Hash};
 extern crate prusti_contracts;
 use prusti_contracts::*;
 
-use tendermint::{
-    block::{
-        signed_header::SignedHeader as TMSignedHeader,
-        // Commit as TMCommit,
-    },
-};
+use tendermint::block::signed_header::SignedHeader as TMSignedHeader;
 
 #[derive(Clone, PartialEq)]
 pub struct LightBlock {
@@ -22,25 +17,21 @@ pub struct LightBlock {
 impl fmt::Debug for LightBlock {
     #[trusted]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("LightBlock")
-            .finish()
+        f.debug_struct("LightBlock").finish()
     }
 }
 
 impl LightBlock {
     /// Constructs a new light block
-    pub fn new(
-        signed_header: SignedHeader
-    ) -> LightBlock {
-        Self {
-            signed_header,
-        }
+    pub fn new(signed_header: SignedHeader) -> LightBlock {
+        Self { signed_header }
     }
 
     /// Returns the height of this block.
     ///
     /// ## Note
     /// This is a shorthand for `block.signed_header.header.height`.
+    #[pure]
     pub fn height(&self) -> Height {
         self.signed_header.header.height
     }
@@ -61,8 +52,7 @@ pub enum Status {
 impl fmt::Debug for Status {
     #[trusted]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("Status")
-            .finish()
+        f.debug_struct("Status").finish()
     }
 }
 

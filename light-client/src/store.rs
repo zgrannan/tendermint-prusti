@@ -22,7 +22,7 @@ pub mod memory;
 /// - [LCV-DIST-STORE.1]
 pub trait LightStore: Debug + Send + Sync {
     /// Get the light block at the given height with the given status, or return `None` otherwise.
-    // fn get(&self, height: Height, status: Status) -> Option<LightBlock>;
+    fn get(&self, height: Height, status: Status) -> Option<LightBlock>;
 
     /// Update the `status` of the given `light_block`.
     fn update(&mut self, light_block: &LightBlock, status: Status);
