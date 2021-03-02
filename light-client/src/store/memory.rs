@@ -80,6 +80,43 @@ fn get_ms(ms: &MemoryStore, height: Height, status: Status) -> Option<LightBlock
     }
 }
 
+#[trusted]
+#[requires(index < veclen(vec))]
+fn get_and_unwrap(vec: &Vec<StoreEntry>, index: usize) -> StoreEntry {
+    return vec.get(index).unwrap().clone();
+}
+
+#[ensures(
+    match result {
+        None => true, 
+        Some(x) => true
+    })]
+fn highest(ls: &MemoryStore, status: Status) -> Option<LightBlock> {
+    let mut vec: Vec<StoreEntry> = values(ls);
+    vec.reverse();
+    let mut i = 0;
+    while i < veclen(&vec) {
+        body_invariant!(i < veclen(&vec));
+        let e = get_and_unwrap(&vec, i);
+        if (e.status == status) {
+            return Some(e.light_block)
+        }
+        i += 1;
+    }
+    return None;
+}
+
+fn values(ls: &MemoryStore) -> Vec<StoreEntry> {
+    return ls.store.values().cloned().collect()
+}
+
+#[pure]
+#[trusted]
+fn veclen(vec: &Vec<StoreEntry>) -> usize {
+    return vec.len();
+}
+
+
 impl LightStore for MemoryStore {
     #[pure]
     #[trusted]
@@ -118,37 +155,34 @@ impl LightStore for MemoryStore {
     // Note: this relies on the fact that iter() returns a list
     //       of elements sorted by key
     fn highest(&self, status: Status) -> Option<LightBlock> {
-        let mut it = self.store.values().rev();
-        loop {
-            match it.next() {
-                Some(e) => {
-                    if (e.status == status) {
-                        return Some(e.light_block.clone());
-                    } else {
-                        return None;
-                    }
-                }
-                None => return None,
+        let mut vec: Vec<StoreEntry> = values(self);
+        vec.reverse();
+        let mut i = 0;
+        while i < veclen(&vec) {
+            body_invariant!(i < veclen(&vec));
+            let e = get_and_unwrap(&vec, i);
+            if (e.status == status) {
+                return Some(e.light_block)
             }
+            i += 1;
         }
+        return None;
     }
 
     // Note: this relies on the fact that iter() returns a list
     //       of elements sorted by key
     fn lowest(&self, status: Status) -> Option<LightBlock> {
-        let mut it = self.store.values();
-        loop {
-            match it.next() {
-                Some(e) => {
-                    if (e.status == status) {
-                        return Some(e.light_block.clone());
-                    } else {
-                        return None;
-                    }
-                }
-                None => return None,
+        let vec: Vec<StoreEntry> = values(self);
+        let mut i = 0;
+        while i < veclen(&vec) {
+            body_invariant!(i < veclen(&vec));
+            let e = get_and_unwrap(&vec, i);
+            if (e.status == status) {
+                return Some(e.light_block)
             }
+            i += 1;
         }
+        return None;
     }
 
     #[trusted]
@@ -162,7 +196,7 @@ impl LightStore for MemoryStore {
                         vec.push(e.light_block.clone())
                     }
                 }
-                None => return Box::new(std::iter::empty()),
+                None => return Box::new(vec.into_iter()),
             }
         }
     }
