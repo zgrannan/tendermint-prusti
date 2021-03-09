@@ -5,7 +5,7 @@ extern crate prusti_contracts;
 use prusti_contracts::*;
 
 #[non_exhaustive]
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct SignedHeader {
     pub header: block::Header,
 }

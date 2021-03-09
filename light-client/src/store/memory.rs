@@ -12,8 +12,25 @@ use crate::{
 use std::collections::btree_map::Entry::*;
 use std::collections::BTreeMap;
 
+#[extern_spec]
+impl<T> std::option::Option<T> {
+    #[pure]
+    #[ensures(matches!(*self, Some(_)) == result)]
+    pub fn is_some(&self) -> bool;
+
+    #[pure]
+    #[ensures(self.is_some() == !result)]
+    pub fn is_none(&self) -> bool;
+
+    #[requires(self.is_some())]
+    pub fn unwrap(self) -> T;
+
+    // ...
+}
+
+
 /// Internal entry for the memory store
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Eq)]
 struct StoreEntry {
     light_block: LightBlock,
     status: Status,
@@ -86,24 +103,90 @@ fn get_and_unwrap(vec: &Vec<StoreEntry>, index: usize) -> StoreEntry {
     return vec.get(index).unwrap().clone();
 }
 
-#[ensures(
-    match result {
-        None => true, 
-        Some(x) => true
-    })]
-fn highest(ls: &MemoryStore, status: Status) -> Option<LightBlock> {
-    let mut vec: Vec<StoreEntry> = values(ls);
-    vec.reverse();
+#[pure]
+#[trusted]
+fn height0() -> Height {
+    panic!("Nvm");
+}
+
+#[pure]
+fn ok(olb: Option<LightBlock>) -> bool {
+    return true;
+}
+
+
+// #[ensures(
+//     match result {
+//         None => true, 
+//         Some(x) => x.status == status
+//     })]
+// // #[ensures(forall(|i: isize| result.is_some() ==> result.unwrap().status == status))]
+// fn lowest(ls: &MemoryStore, status: Status) -> Option<StoreEntry> {
+//     let mut vec: Vec<StoreEntry> = values(ls);
+//     let mut i = 0;
+//     while i < veclen(&vec) {
+//         body_invariant!(i < veclen(&vec));
+//         let e = get_and_unwrap(&vec, i);
+//         if (e.status == status) {
+//             return Some(e)
+//         }
+//         i += 1;
+//     }
+//     return None;
+// }
+
+#[pure]
+#[trusted]
+#[ensures(result >= 0)]
+fn num_values(ls: &MemoryStore) -> usize {
+    return veclen(&values(ls));
+}
+
+#[pure]
+#[trusted]
+#[requires(idx < num_values(ls))]
+fn get_at(ls: &MemoryStore, idx: usize) -> StoreEntry {
+    let vec: Vec<StoreEntry> = values(ls);
+    return get_and_unwrap(&vec, idx);
+}
+
+#[ensures(result < num_values(ls) as i64)]
+#[ensures(result > 0 ==> get_at(&ls, result as usize).status == status)]
+fn lowest_idx(ls: &MemoryStore, status: Status) -> i64 {
     let mut i = 0;
-    while i < veclen(&vec) {
-        body_invariant!(i < veclen(&vec));
-        let e = get_and_unwrap(&vec, i);
+    while i < num_values(&ls) {
+        body_invariant!(i < num_values(&ls));
+        let e = get_at(ls, i);
         if (e.status == status) {
-            return Some(e.light_block)
+            return i as i64;
         }
         i += 1;
     }
-    return None;
+    return -1;
+}
+
+// #[pure]
+// fn contains(ms: &MemoryStore, lb: LightBlock) -> bool {
+//     let vec: Vec<StoreEntry> = values(ms);
+//     return contains_helper(vec, lb, 0);
+// }
+
+// #[pure]
+// fn contains_helper(haystack: Vec<StoreEntry>, needle: LightBlock, at: usize) -> bool {
+//     if at < veclen(&haystack) {
+//         let e = get_and_unwrap(&haystack, at);
+//         if (e.light_block == needle) {
+//             return true;
+//         } else {
+//             return contains_helper(haystack, needle, at + 1);
+//         }
+//     } else {
+//         return false;
+//     }
+// }
+
+fn light_blocks(ls: &MemoryStore) -> Vec<LightBlock> {
+    return ls.store.values().cloned().map(|e| e.light_block).collect();
 }
 
 fn values(ls: &MemoryStore) -> Vec<StoreEntry> {

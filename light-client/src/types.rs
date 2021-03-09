@@ -8,7 +8,7 @@ use prusti_contracts::*;
 
 use tendermint::block::signed_header::SignedHeader as TMSignedHeader;
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct LightBlock {
     /// Header and commit of this block
     pub signed_header: SignedHeader,
@@ -37,7 +37,7 @@ impl LightBlock {
     }
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Eq)]
 pub enum Status {
     /// The light block has failed verification.
     Failed,
